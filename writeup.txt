@@ -8,17 +8,35 @@ A-----------------B
 
 
 RSA encryption
-Two distinct prime numbers P and Q are generated and multiplied to generate N. this number is the public key. A function called the Euler's Totient function is defined as
+Two distinct prime numbers P and Q are generated and multiplied to generate N. this number is the clock size or the modulus.
+The public key is the pair of two numbers (N, e). A function called the 
+Euler's Totient function is defined as:-
 ϕ(N) = (P-1)*(Q-1). This functions basically spits out all the numbers co-prime with N(numbers that do not share a common factor).
-To pick one of the private key, lets say, e, it must meet these two criterias:-
+To pick e, it must meet these two criterias:-
 -- 1 < e < ϕ(N)
 -- coprime with N, ϕ(N)
 
-to chose the private key in the decrypt side, lets say, d, we gotta ensure that:
+to chose the private key , lets say, d, we gotta ensure that:
 
 --d*e(mod(ϕ(N))) == 1
 
 This is RSA encryption.
+
+
+2)
+Added 4 binary bits to the start of each packet that denotes the length of the entire package and dynamically tells the socket.recv function
+exactly how many bits to fetch, rather than hard coding it with 1024.
+This is achieved by using the built in struct library in python that packs the length bits of the message along with the message encoded in
+utf-8. The reciever first reads the 4 initial length bits and then unpacks the entire thing to read the rest of the message 
+
+3)
+C = M^e(mod N)
+c -> cypher text
+M -> message
+N -> p*q
+
+used the pycryptodome library that does the miller-rabin primary test dozens of times. It is a probabilistic algorithm that proves a number
+is not composite, thus prime.
 
 
 
