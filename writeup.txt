@@ -1,0 +1,25 @@
+A-----------------B
+        |
+        |
+        |       A wants to send message to B and C wants to intercept it. A generates a public and a private key. It sends the public key first
+        |       B and C recieve the public key and B uses A's public key to decrypt it.
+        |
+        C
+
+
+RSA encryption
+Two distinct prime numbers P and Q are generated and multiplied to generate N. this number is the public key. A function called the Euler's Totient function is defined as
+ϕ(N) = (P-1)*(Q-1). This functions basically spits out all the numbers co-prime with N(numbers that do not share a common factor).
+To pick one of the private key, lets say, e, it must meet these two criterias:-
+-- 1 < e < ϕ(N)
+-- coprime with N, ϕ(N)
+
+to chose the private key in the decrypt side, lets say, d, we gotta ensure that:
+
+--d*e(mod(ϕ(N))) == 1
+
+This is RSA encryption.
+
+
+
+
