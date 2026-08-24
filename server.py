@@ -12,25 +12,26 @@ def pack(var):
     # Creating a packet where first bits are the length of the message
     # ! is for standard network byte order and I is for unsigned int
 
-
-
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
     server_socket.bind((host, port))
-    print("(+) Performing RSA handshake")
-    server_socket.sendall(struct.pack("Qi", rsa_encrypt.N, 65537))
-    print("(+) Waiting for acknowledgement...")
     server_socket.listen()
-    flag = server_socket.recv(1)
-    if(flag):
-        print("(+) Connection Established successfully")
-    else:
-        sys.exit("RSA encryption failed. Connection terminated")
-
-
     print(f"(+) Start listening on {host} and port {port}")
     conn, addr = server_socket.accept()
     with conn:
         print(f"(+) Connected by {addr}")
+        print("(+) Performing RSA Handshake...")
+
+        N = rsa_encrypt.N
+        e = 65537
+        key_string = f"{N}, {e}" #this is called string interpolation
+        conn.sendall(pack(key_string))
+        print("(+) Waiting for ACK...")
+        flag = conn.recv(1)
+        if(flag == b'1'):
+            print("(+) Server Handshake established! Commensing chat")
+        else:
+            sys.exit("(+) Handshake failed exiting now...")
+
         while True:
 
             data_bits_struct = conn.recv(4)

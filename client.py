@@ -1,6 +1,5 @@
 import socket
 import struct
-import rsa_encrypt
 import sys
 
 host = '127.0.0.1' 
@@ -15,28 +14,26 @@ def pack(var):
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     client_socket.connect((host, port))
-    print("(+) Begining RSA handshake...")
-    keys = client_socket.recv(2048)
-    keys_unpacked = struct.unpack("Qi", keys)
-    N = keys_unpacked[0]
-    e = keys_unpacked[1]
-    if((rsa_encrypt.d*e)%rsa_encrypt.euiler_totient == 1):
-        print(f"Connecton to {host}:{port} established successfully")
-        flag = 1
-        client_socket.sendall(flag)
-    else:
-        sys.exit("RSA encryption failed. Connection terminated")
-
+    header = client_socket.recv(4)
+    header_decoded = struct.unpack("!I", header)
+    recieved_keys = client_socket.recv(header_decoded[0])
+    N_and_e = recieved_keys.decode('utf-8')
+    split_keys = N_and_e.split(',')
+    N = int(split_keys[0])
+    e = int(split_keys[1])
+    
+    client_socket.sendall(b'1')
+    print("(+) Client Handshake successful! Commensing chat")
     while True:
         message = input("message: ")
         client_socket.sendall(pack(message))
         print("(+) Message sent to server...")
+        print("(+) Waiting for the message...")
 
 
         data_bits_struct = client_socket.recv(4)
         data_bits = struct.unpack("!I", data_bits_struct)
         data = client_socket.recv(data_bits[0])
         print(f"reply: {data.decode('utf-8')}")
-        print("(+) Waiting for the message...")
-
+        
 print("(+)Connection closed")

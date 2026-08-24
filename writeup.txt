@@ -38,6 +38,8 @@ N -> p*q
 used the pycryptodome library that does the miller-rabin primary test dozens of times. It is a probabilistic algorithm that proves a number
 is not composite, thus prime.
 
+Server sends its N, e to the client in here.
+
 
 
 

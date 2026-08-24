@@ -10,7 +10,9 @@ def ETF_generate(P, Q):
 
 def secret_key_generate(m):
     e = 65537
-    d = 1/(e%m)
+    d = pow(e, -1, m)
+    #big fix here. pythhon 3.8 does the extended euclidian algo directly.
+    #it does the modular inverse perfectly
     return d
 
 P = generate_prime()
