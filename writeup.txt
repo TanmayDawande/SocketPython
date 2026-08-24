@@ -1,45 +1,29 @@
+1) Architecture
 A-----------------B
         |
         |
-        |       A wants to send message to B and C wants to intercept it. A generates a public and a private key. It sends the public key first
-        |       B and C recieve the public key and B uses A's public key to decrypt it.
-        |
+        |       A wants to securely receive messages from B. C wants to intercept them.
+        |       A generates a public and a private key. It sends the public key to B.
+        |       B and C receive the public key. B uses A's public key to ENCRYPT the message.
+        |       C cannot read it. A receives the message and uses A's private key to DECRYPT it.
         C
 
+2) RSA Encryption Mathematics
+Two distinct massive prime numbers P and Q are generated (using pycryptodome's Miller-Rabin primality test) and multiplied to generate N. N is the clock size or the modulus.
+The public key is the pair of two numbers (N, e). 
 
-RSA encryption
-Two distinct prime numbers P and Q are generated and multiplied to generate N. this number is the clock size or the modulus.
-The public key is the pair of two numbers (N, e). A function called the 
-Euler's Totient function is defined as:-
-ϕ(N) = (P-1)*(Q-1). This functions basically spits out all the numbers co-prime with N(numbers that do not share a common factor).
-To pick e, it must meet these two criterias:-
+Euler's Totient function is defined as:
+ϕ(N) = (P-1)*(Q-1). This function calculates the amount of numbers coprime with N.
+To pick the public exponent 'e', it must meet these two criteria:
 -- 1 < e < ϕ(N)
--- coprime with N, ϕ(N)
+-- e must be coprime with ϕ(N)
 
-to chose the private key , lets say, d, we gotta ensure that:
+To mathematically choose the private key 'd', we use the Extended Euclidean Algorithm to ensure that:
+-- (d*e) mod(ϕ(N)) == 1
 
---d*e(mod(ϕ(N))) == 1
+The encryption formula is: C = (M^e) mod N
+The decryption formula is: M = (C^d) mod N
 
-This is RSA encryption.
-
-
-2)
-Added 4 binary bits to the start of each packet that denotes the length of the entire package and dynamically tells the socket.recv function
-exactly how many bits to fetch, rather than hard coding it with 1024.
-This is achieved by using the built in struct library in python that packs the length bits of the message along with the message encoded in
-utf-8. The reciever first reads the 4 initial length bits and then unpacks the entire thing to read the rest of the message 
-
-3)
-C = M^e(mod N)
-c -> cypher text
-M -> message
-N -> p*q
-
-used the pycryptodome library that does the miller-rabin primary test dozens of times. It is a probabilistic algorithm that proves a number
-is not composite, thus prime.
-
-Server sends its N, e to the client in here.
-
-
-
-
+3) Application Layer Protocol (Framing)
+Added a 4-byte header to the start of each packet that denotes the length of the entire payload and dynamically tells the socket.recv() function exactly how many BYTES to fetch, preventing TCP buffer overflow/underflow.
+This is achieved by using the built-in struct library in Python that packs the length of the message into a 32-bit network-byte-order integer (!I). The receiver first reads the 4-byte header, unpacks it to get the integer length, and then dynamically receives the exact remainder of the packet.

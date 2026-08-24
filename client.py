@@ -11,6 +11,12 @@ def pack(var):
     # Creating a packet where first bits are the length of the message
     # ! is for standard network byte order and I is for unsigned int
 
+def generate_cyphertext(message, N, e):
+    message_bytes = message.encode('utf-8')
+    M = int.from_bytes(message_bytes, byteorder='big')
+    # print(f"{pow(M, e, N)}") debugging
+    return f"{pow(M, e, N)}"
+
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     client_socket.connect((host, port))
@@ -26,7 +32,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     print("(+) Client Handshake successful! Commensing chat")
     while True:
         message = input("message: ")
-        client_socket.sendall(pack(message))
+        client_socket.sendall(pack(generate_cyphertext(message, N, e)))
         print("(+) Message sent to server...")
         print("(+) Waiting for the message...")
 
@@ -35,5 +41,5 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         data_bits = struct.unpack("!I", data_bits_struct)
         data = client_socket.recv(data_bits[0])
         print(f"reply: {data.decode('utf-8')}")
-        
+
 print("(+)Connection closed")
