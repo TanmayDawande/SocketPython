@@ -27,3 +27,29 @@ The decryption formula is: M = (C^d) mod N
 3) Application Layer Protocol (Framing)
 Added a 4-byte header to the start of each packet that denotes the length of the entire payload and dynamically tells the socket.recv() function exactly how many BYTES to fetch, preventing TCP buffer overflow/underflow.
 This is achieved by using the built-in struct library in Python that packs the length of the message into a 32-bit network-byte-order integer (!I). The receiver first reads the 4-byte header, unpacks it to get the integer length, and then dynamically receives the exact remainder of the packet.
+
+-----------------------------------------------------
+
+added the two way rsa encryption. Earlier, only client messages we encrypted but now the client also has its messages 
+encrypted. Made a new crypto_engine that handles the separate logic of encrypting and decrypting
+logic steps involved - 
+1) The server generates its own keys and sends them to the client
+2) The client recieves these keys and stores them and generates its own keys to send them to the server
+3) The server recieves these keys and sends an ACK
+4) The ack is recieved and the chat begins
+5) The client messages are encryoted by the servers keys and sent
+6) The server recieves them and decrypts using its own keys.
+
+
+PROBLEM OCCOURED -
+currently, babel uses pure RSA modular exponentiation to to encrypt chat payloads. 
+Because of the mathematical rules of RSA (M^e mod N), the Integer representation of the Message (M) must be strictly 
+smaller than the Modulus (N). 
+-generated primes, p and q are 1024 bit
+-mod n is 2048 bit
+-2048 bits / 8 bits = 256 bytes
+
+BUG - if a message more than 256 bit is sent, an overflow error is caused due to wrap-around logic of modulus operation
+FIX - babel will use a hybrid cryptography model in the futire commits. RSA will only be used duing handshake and after that 
+once a session is established, the actual chat stream will be encrypted using AES-GCM, which has no payload limit.
+
