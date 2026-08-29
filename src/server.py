@@ -1,6 +1,7 @@
 import socket
 import struct
-import rsa_encrypt
+import crypto_engine as cr
+import rsa_encrypt as rsae
 import sys
 import math
 import argparse
@@ -12,16 +13,6 @@ def pack(var):
     return packed+var.encode('utf-8')
     # Creating a packet where first bits are the length of the message
     # ! is for standard network byte order and I is for unsigned int
-
-def decrypt(C):
-    C = int(C)
-    # print(C) debugging 
-    M_decrypted = pow(C, rsa_encrypt.d, rsa_encrypt.N)
-    bit_length = math.ceil(M_decrypted.bit_length() / 8)
-    #this calculates the bytelehgth which is needed in the to_bytes
-    decrypt_bytes = M_decrypted.to_bytes(bit_length, byteorder="big")
-    return decrypt_bytes.decode('utf-8')
-
 
 def start_server(arg_host, arg_port):
     host = arg_host
@@ -35,38 +26,46 @@ def start_server(arg_host, arg_port):
         with conn:
             print(f"[+] Connected by {addr}")
             print("[*] Performing RSA Handshake...")
-
-            N = rsa_encrypt.N
-            e = 65537
-            key_string = f"{N}, {e}" #this is called string interpolation
+            #server's own keys that are sent to the client
+            N_server = rsae.N
+            e_server = 65537
+            d_server = rsae.d
+            key_string = f"{N_server}, {e_server}" #this is called string interpolation
             conn.sendall(pack(key_string))
-            print("[*] Waiting for ACK...")
-            flag = conn.recv(1)
-            if(flag == b'1'):
-                print("(+) Server Handshake established! Commencing chat")
-            else:
-                sys.exit("(-) Handshake failed exiting now...")
+
+            header = conn.recv(4)
+            header_decoded = struct.unpack("!I", header)
+            recieved_keys = conn.recv(header_decoded[0])
+            N_and_e = recieved_keys.decode('utf-8')
+            split_keys = N_and_e.split(',')
+            #client's keys that are recieved
+            N_client = int(split_keys[0])
+            e_client = int(split_keys[1])
+
+            conn.sendall(b'1')
+            print("[+] Server initialized its own keys and recieved client keys")
+            print("[+] Sending ACK")
 
             try:
                 while True:
                 
                     data_bits_struct = conn.recv(4)
     
-                    #if client disconnects, an ugly error is prevented. Ai suggested this
+                    #catch empty buffer if provided
                     if not data_bits_struct:
                         print("\n[-] Client disconnected.")
                         break 
                     
                     data_bits = struct.unpack("!I", data_bits_struct)
                     data = conn.recv(data_bits[0])
-                    data = decrypt(data)
+                    data = cr.decrypt(data, N_server, d_server)
                     if not data:
                         break
     
                     print(f"[Client]: {data}")
                     message = input("[You]: ")
                     print("[*] Waiting for the message...")
-                    conn.sendall(pack(message))
+                    conn.sendall(pack(cr.generate_cyphertext(message, N_client, e_client)))
 
             except KeyboardInterrupt:
                 print("\n[!] keyboard interrupt. exiting now...")
