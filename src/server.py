@@ -1,18 +1,8 @@
 import socket
-import struct
-import crypto_engine as cr
-import rsa_encrypt as rsae
-import sys
-import math
 import argparse
 import os
+from secure_node import SecureNODE
 
-
-def pack(var):
-    packed = struct.pack("!I", len(var.encode('utf-8')))
-    return packed+var.encode('utf-8')
-    # Creating a packet where first bits are the length of the message
-    # ! is for standard network byte order and I is for unsigned int
 
 def start_server(arg_host, arg_port):
     host = arg_host
@@ -23,24 +13,13 @@ def start_server(arg_host, arg_port):
         server_socket.listen()
         print(f"[*] Started listening on {host} and port {port}")
         conn, addr = server_socket.accept()
+        NODE = SecureNODE(conn)
+
         with conn:
             print(f"[+] Connected by {addr}")
             print("[*] Performing RSA Handshake...")
-            #server's own keys that are sent to the client
-            N_server = rsae.N
-            e_server = 65537
-            d_server = rsae.d
-            key_string = f"{N_server}, {e_server}" #this is called string interpolation
-            conn.sendall(pack(key_string))
-
-            header = conn.recv(4)
-            header_decoded = struct.unpack("!I", header)
-            recieved_keys = conn.recv(header_decoded[0])
-            N_and_e = recieved_keys.decode('utf-8')
-            split_keys = N_and_e.split(',')
-            #client's keys that are recieved
-            N_client = int(split_keys[0])
-            e_client = int(split_keys[1])
+            NODE.recieveHandshake()
+            NODE.sendHandshake()
 
             conn.sendall(b'1')
             print("[+] Server initialized its own keys and recieved client keys")
@@ -49,23 +28,15 @@ def start_server(arg_host, arg_port):
             try:
                 while True:
                 
-                    data_bits_struct = conn.recv(4)
-    
-                    #catch empty buffer if provided
-                    if not data_bits_struct:
-                        print("\n[-] Client disconnected.")
-                        break 
-                    
-                    data_bits = struct.unpack("!I", data_bits_struct)
-                    data = conn.recv(data_bits[0])
-                    data = cr.decrypt(data, N_server, d_server)
+                    data = NODE.unpack_and_decrypt()
                     if not data:
+                        print("\n[-] Client disconnected.")
                         break
-    
                     print(f"[Client]: {data}")
+
                     message = input("[You]: ")
                     print("[*] Waiting for the message...")
-                    conn.sendall(pack(cr.generate_cyphertext(message, N_client, e_client)))
+                    NODE.pack_and_encrypt(message)
 
             except KeyboardInterrupt:
                 print("\n[!] keyboard interrupt. exiting now...")

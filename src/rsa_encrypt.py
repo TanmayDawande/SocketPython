@@ -21,4 +21,3 @@ N = P*Q
 
 euiler_totient = ETF_generate(P, Q)
 d = secret_key_generate(euiler_totient)
-
